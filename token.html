@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Management System Design</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+      body {
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      }
+      .card {
+      position: relative; /* Ensures the card is positioned correctly relative to particles */
+      z-index: 10; 
+      background: #1f1f1f;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin: 10px;
+      width: 350px;
+      font-size: 14px;
+      }
+      .validity-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background-color: #27ae60;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #000;
+      }
+      .token-type {
+      color: #9b9b9b;
+      margin: 10px 0;
+      }
+      .uuid {
+      word-break: break-all;
+      margin-bottom: 16px;
+      color: #9b9b9b;
+      }
+      .description {
+      border: 1px solid #333;
+      padding: 10px;
+      color: #9b9b9b;
+      margin-bottom: 16px;
+      background: #2c2c2c;
+      width: calc(100% - 22px); 
+      box-sizing: border-box; 
+      border-radius: 4px; 
+      outline: none; /* Removes the blue outline on focus */
+      }
+      .token-permissions-title {
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #ffffff;
+      text-transform: uppercase;
+      }
+      .accordion {
+      background: #1f1f1f;
+      color: #fff;
+      cursor: pointer;
+      padding: 18px;
+      width: 100%;
+      text-align: left;
+      border: none;
+      outline: none;
+      transition: background-color 0.4s ease;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+      }
+      .active, .accordion:hover {
+      background-color: #333;
+      }
+      .accordion:after {
+      content: '\002B';
+      color: #777;
+      font-weight: bold;
+      float: right;
+      margin-left: 5px;
+      }
+      .active:after {
+      content: "\2212";
+      }
+      .panel {
+      padding: 0 18px;
+      background-color: black;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      border-bottom: 1px solid #333;
+      }
+      .flex-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px; /* Added margin */
+      }
+      .token-info {
+      border-top: 1px solid #333;
+      padding-top: 10px;
+      margin-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      color: #9b9b9b;
+      }
+      .button {
+      display: inline-block;
+      padding: 10px 15px;
+      margin-top: 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #333;
+      color: #fff;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-bottom: 20px; 
+      }
+      .button:hover {
+      background-color: #444;
+      }
+      /* Font Awesome Icons */
+      .read-icon {
+      color: #27ae60;
+      margin-right: 5px;
+      }
+      .write-icon {
+      color: #c0392b;
+      margin-right: 5px;
+      }
+      .permissions-heading {
+      color: #9b9b9b;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      }
+      .permission {
+      margin-bottom: 8px;
+      }
+      .accordion-container {
+      max-height: 450px; 
+      overflow-y: auto;
+      margin-top: 20px;
+      }
+      /* Style the scrollbar for Webkit browsers */
+      .accordion-container::-webkit-scrollbar {
+      width: 10px;
+      }
+      .accordion-container::-webkit-scrollbar-track {
+      background: #2c2c2c; 
+      }
+      .accordion-container::-webkit-scrollbar-thumb {
+      background-color: #444; 
+      border-radius: 5px; 
+      border: 2px solid #2c2c2c;
+      }
+      /* Style the scrollbar for Firefox */
+      .accordion-container {
+      scrollbar-width: thin; 
+      scrollbar-color: #444 #2c2c2c; 
+      }
+      .token-info-fixed 
+      .validity-indicator {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background-color: #27ae60;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #000;
+      }
+      .token-type {
+      color: #9b9b9b;
+      margin: 10px 0;
+      }
+      .uuid {
+      word-break: break-all;
+      margin-bottom: 16px;
+      color: #9b9b9b;
+      }
+      .token-permissions-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      }
+      .token-permissions-title {
+      display: inline-block; 
+      }
+      .token-permissions-header {
+      display: flex;
+      align-items: center; 
+      justify-content: space-between;
+      }
+      #toggle-all {
+      cursor: pointer;
+      font-size: 18px;
+      color: #ffffff;
+      margin-left: 10px;
+      margin-right: 6px;
+      transition: color 0.3s;
+      }
+      #toggle-all:hover {
+      color: #aaa;
+      }
+      .accordion:after {
+      position: absolute;
+      right: 10px; 
+      }
+      .accordion {
+      padding-right: 30px; 
+      position: relative;
+      }
+      #particles-js {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 0; 
+      }
+      /* Revoke button styles */
+      .button.revoke {
+      background-color: #333; /* Default background */
+      /* Rest of your styles */
+      }
+      .button.revoke:hover {
+      background-color: #c0392b; /* Red color on hover */
+      /* Other hover styles if necessary */
+      }
+      /* Regenerate button styles */
+      .button.regenerate {
+      background-color: #333; /* Default background */
+      /* Rest of your styles */
+      }
+      .button.regenerate:hover {
+      background-color: #27ae60; /* Green color on hover */
+      /* Other hover styles if necessary */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="particles-js"></div>
+    <div class="card">
+    <div class="token-info-fixed">
+      <span class="validity-indicator">Valid</span>
+      <div class="token-type">Fine-grained token</div>
+      <div class="uuid">018d894c-a56a-7d08-ad43-d94f12bccfcc</div>
+      <input class="description" placeholder="A brief description"></input>
+    </div>
+    <div class="accordion-container">
+      <div class="token-permissions-header">
+        <div class="token-permissions-title">Token Permissions</div>
+        <i id="toggle-all" class="fa-solid fa-circle-chevron-up"></i>
+      </div>
+      <button class="accordion">DeterminateSystems/agenix-cli</button>
+      <div class="panel">
+        <div class="permissions-heading">Permissions</div>
+        <div class="permission">
+          <span><i class="fas fa-eye read-icon"></i>Read</span>
+        </div>
+        <div class="permission">
+          <span><i class="fas fa-pencil-alt write-icon"></i>Write</span>
+        </div>
+        <div class="token-info">
+          <div>Issued: <span>Thu Feb 08 2024</span></div>
+          <div>Expires: <span>Wed May 08 2024</span></div>
+        </div>
+        <button class="button revoke">Revoke</button>
+        <button class="button regenerate">Regenerate</button>
+      </div>
+      <button class="accordion">DeterminateSystems/flake-schemas</button>
+      <div class="panel">
+        <div class="permissions-heading">Permissions</div>
+        <div class="permission">
+          <span><i class="fas fa-eye read-icon"></i>Read</span>
+        </div>
+        <div class="permission">
+          <span><i class="fas fa-pencil-alt write-icon"></i>Write</span>
+        </div>
+        <!-- Issued and Expires information -->
+        <div class="token-info">
+          <div>Issued: <span>Thu Feb 08 2024</span></div>
+          <div>Expires: <span>Wed May 08 2024</span></div>
+        </div>
+        <!-- Action buttons -->
+        <button class="button revoke">Revoke</button>
+        <button class="button regenerate">Regenerate</button>
+      </div>
+      <!-- Third Accordion Button -->
+      <button class="accordion">DeterminateSystems/nix-netboot-serve</button>
+      <!-- Corresponding Panel for the Third Button -->
+      <div class="panel">
+        <!-- Permissions heading -->
+        <div class="permissions-heading">Permissions</div>
+        <div class="permission">
+          <span><i class="fas fa-eye read-icon"></i>Read</span>
+        </div>
+        <div class="permission">
+          <span><i class="fas fa-pencil-alt write-icon"></i>Write</span>
+        </div>
+        <!-- Issued and Expires information -->
+        <div class="token-info">
+          <div>Issued: <span>Thu Feb 08 2024</span></div>
+          <div>Expires: <span>Wed May 08 2024</span></div>
+        </div>
+        <button class="button revoke">Revoke</button>
+        <button class="button regenerate">Regenerate</button>
+      </div>
+      <button class="accordion">DeterminateSystems/nuenv</button>
+      <div class="panel">
+        <div class="permissions-heading">Permissions</div>
+        <div class="permission">
+          <span><i class="fas fa-eye read-icon"></i>Read</span>
+        </div>
+        <div class="permission">
+          <span><i class="fas fa-pencil-alt write-icon"></i>Write</span>
+        </div>
+        <div class="token-info">
+          <div>Issued: <span>Thu Feb 08 2024</span></div>
+          <div>Expires: <span>Wed May 08 2024</span></div>
+        </div>
+        <button class="button revoke">Revoke</button>
+        <button class="button regenerate">Regenerate</button>
+      </div>
+    </div>
+    <script>
+      var acc = document.getElementsByClassName("accordion");
+      var toggleAllIcon = document.getElementById('toggle-all');
+      var allOpen = false; // State to track if all accordions are open
+      
+      // Function to toggle individual accordion
+      function toggleAccordion(accordion) {
+        accordion.classList.toggle("active");
+        var panel = accordion.nextElementSibling;
+        if (panel.style.maxHeight) {
+          panel.style.maxHeight = null;
+        } else {
+          panel.style.maxHeight = panel.scrollHeight + "px";
+        }
+      }
+      
+      // Event listener for individual accordion buttons
+      for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+          toggleAccordion(this);
+        });
+      }
+      
+      // Event listener for the  icon
+      toggleAllIcon.addEventListener('click', function() {
+        allOpen = !allOpen;
+        for (let i = 0; i < acc.length; i++) {
+          if (allOpen) {
+            acc[i].classList.add("active");
+            acc[i].nextElementSibling.style.maxHeight = acc[i].nextElementSibling.scrollHeight + "px";
+          } else {
+            acc[i].classList.remove("active");
+            acc[i].nextElementSibling.style.maxHeight = null;
+          }
+        }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+      particlesJS("particles-js", {
+          "particles": {
+              "number": {
+                  "value": 80,
+                  "density": {
+                      "enable": true,
+                      "value_area": 800
+                  }
+              },
+              "color": {
+                  "value": "#ffffff"
+              },
+              "shape": {
+                  "type": "circle",
+                  "stroke": {
+                      "width": 0,
+                      "color": "#000000"
+                  },
+                  "polygon": {
+                      "nb_sides": 5
+                  },
+                  "image": {
+                      "src": "img/github.svg",
+                      "width": 100,
+                      "height": 100
+                  }
+              },
+              "opacity": {
+                  "value": 0.5,
+                  "random": false,
+                  "anim": {
+                      "enable": false,
+                      "speed": 1,
+                      "opacity_min": 0.1,
+                      "sync": false
+                  }
+              },
+              "size": {
+                  "value": 5,
+                  "random": true,
+                  "anim": {
+                      "enable": false,
+                      "speed": 40,
+                      "size_min": 0.1,
+                      "sync": false
+                  }
+              },
+              "line_linked": {
+                  "enable": true,
+                  "distance": 150,
+                  "color": "#ffffff",
+                  "opacity": 0.4,
+                  "width": 1
+              },
+              "move": {
+                  "enable": true,
+                  "speed": 6,
+                  "direction": "none",
+                  "random": false,
+                  "straight": false,
+                  "out_mode": "out",
+                  "bounce": false,
+                  "attract": {
+                      "enable": false,
+                      "rotateX": 600,
+                      "rotateY": 1200
+                  }
+              }
+          },
+          "interactivity": {
+              "detect_on": "canvas",
+              "events": {
+                  "onhover": {
+                      "enable": true,
+                      "mode": "repulse"
+                  },
+                  "onclick": {
+                      "enable": true,
+                      "mode": "push"
+                  },
+                  "resize": true
+              },
+              "modes": {
+                  "grab": {
+                      "distance": 400,
+                      "line_linked": {
+                          "opacity": 1
+                      }
+                  },
+                  "bubble": {
+                      "distance": 400,
+                      "size": 40,
+                      "duration": 2,
+                      "opacity": 8,
+                      "speed": 3
+                  },
+                  "repulse": {
+                      "distance": 200,
+                      "duration": 0.4
+                  },
+                  "push": {
+                      "particles_nb": 4
+                  },
+                  "remove": {
+                      "particles_nb": 2
+                  }
+              }
+          },
+          "retina_detect": true
+      });
+    </script>
+  </body>
+</html>
